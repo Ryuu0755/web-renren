@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TabunganKu - Aman & Pribadi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 0.85rem; position: relative; }
+        .has-transaction { background-color: #10b981; color: white; font-weight: bold; }
+        .today { border: 2px solid #3b82f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- ================= VIEW: AUTHENTICATION (LOGIN/SIGNUP) ================= -->
+    <div id="authView" class="min-h-screen flex items-center justify-center p-4 fade-in">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <div class="bg-emerald-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-piggy-bank text-3xl text-emerald-600"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">TabunganKu</h1>
+                <p class="text-gray-500 text-sm mt-1">Kelola keuangan harianmu dengan aman</p>
+            </div>
+
+            <!-- Tab Navigasi -->
+            <div class="flex bg-gray-100 p-1 rounded-xl mb-6">
+                <button onclick="switchAuthTab('login')" id="tabLogin" class="flex-1 py-2 rounded-lg text-sm font-bold transition bg-white shadow text-emerald-600">Masuk</button>
+                <button onclick="switchAuthTab('signup')" id="tabSignup" class="flex-1 py-2 rounded-lg text-sm font-bold transition text-gray-500 hover:text-gray-700">Daftar</button>
+            </div>
+
+            <!-- Form Login -->
+            <form id="loginForm" class="space-y-4 fade-in">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Username</label>
+                    <input type="text" id="loginUsername" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+                    <input type="password" id="loginPassword" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-md">
+                    Masuk ke Aplikasi
+                </button>
+            </form>
+
+            <!-- Form Signup (Hidden by default) -->
+            <form id="signupForm" class="space-y-4 hidden fade-in">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Nama Lengkap</label>
+                    <input type="text" id="signupName" required placeholder="Contoh: Budi Santoso" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Username (unik)</label>
+                    <input type="text" id="signupUsername" required placeholder="Contoh: budi123" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
+                    <input type="password" id="signupPassword" required minlength="4" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-md">
+                    Buat Akun Baru
+                </button>
+            </form>
+            <p id="authMessage" class="text-center text-sm mt-4 font-medium"></p>
+        </div>
+    </div>
+
+    <!-- ================= VIEW: MAIN APPLICATION (DASHBOARD) ================= -->
+    <div id="appView" class="hidden pb-20 fade-in">
+        <!-- Header -->
+        <header class="bg-emerald-600 text-white p-6 rounded-b-3xl shadow-lg sticky top-0 z-50">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h1 class="text-xl font-bold"><i class="fas fa-piggy-bank mr-2"></i>TabunganKu</h1>
+                    <p id="userGreeting" class="text-emerald-100 text-xs mt-1">Halo, User</p>
+                </div>
+                <button onclick="logout()" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs px-3 py-2 rounded-full transition">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Keluar
+                </button>
+            </div>
+            <div class="text-center">
+                <p class="text-emerald-100 text-sm">Total Tabungan Saat Ini</p>
+                <h2 id="totalSavings" class="text-4xl font-extrabold mt-1">Rp 0</h2>
+            </div>
+        </header>
+
+        <main class="p-4 space-y-6 max-w-md mx-auto">
+            <!-- Form Input -->
+            <div class="bg-white p-5 rounded-2xl shadow-md">
+                <h3 class="font-bold text-lg mb-4 text-gray-700">Tambah Tabungan</h3>
+                <form id="savingsForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Jumlah (Rp)</label>
+                        <input type="number" id="amount" required placeholder="Contoh: 10000" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none text-lg font-semibold">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Catatan (Opsional)</label>
+                        <input type="text" id="note" placeholder="Contoh: Uang jajan sisa" class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Tanggal & Jam</label>
+                        <input type="datetime-local" id="datetime" required class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition duration-200 shadow-md">
+                        <i class="fas fa-plus-circle mr-2"></i>Simpan Tabungan
+                    </button>
+                </form>
+            </div>
+
+            <!-- Kalender -->
+            <div class="bg-white p-5 rounded-2xl shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <button id="prevMonth" class="text-gray-500 hover:text-emerald-600 p-2"><i class="fas fa-chevron-left"></i></button>
+                    <h3 id="calendarMonthYear" class="font-bold text-lg text-gray-700"></h3>
+                    <button id="nextMonth" class="text-gray-500 hover:text-emerald-600 p-2"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 mb-2">
+                    <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+                </div>
+                <div id="calendarGrid" class="calendar-grid"></div>
+            </div>
+
+            <!-- Riwayat Transaksi -->
+            <div class="bg-white p-5 rounded-2xl shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-lg text-gray-700">Riwayat Transaksi</h3>
+                    <div class="flex items-center gap-2">
+                        <button id="exportBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200">Export</button>
+                        <button id="importBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200">Import</button>
+                        <input type="file" id="importFile" accept="application/json" class="hidden">
+                        <button id="syncBtn" class="text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700">Sinkronisasi</button>
+                        <span id="transactionCount" class="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded-full">0 data</span>
+                    </div>
+                </div>
+                <div id="transactionList" class="space-y-3 max-h-96 overflow-y-auto hide-scrollbar">
+                    <p class="text-center text-gray-400 py-4">Belum ada transaksi.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // --- DATABASE SIMULATION (LocalStorage) ---
+        // Struktur Data: 
+        // users = [{ name, username, password }]
+        // transactions = [{ id, username, amount, note, datetime }]
+        
+        let users = JSON.parse(localStorage.getItem('tk_users')) || [];
+        let allTransactions = JSON.parse(localStorage.getItem('tk_transactions')) || [];
+        let currentUser = sessionStorage.getItem('tk_current_user') || null;
+        let currentDate = new Date();
+
+        // --- AUTHENTICATION FUNCTIONS ---
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            const tabLogin = document.getElementById('tabLogin');
+            const tabSignup = document.getElementById('tabSignup');
+            const msg = document.getElementById('authMessage');
+            msg.innerText = ''; // Clear messages
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                tabLogin.classList.add('bg-white', 'shadow', 'text-emerald-600');
+                tabLogin.classList.remove('text-gray-500');
+                tabSignup.classList.remove('bg-white', 'shadow', 'text-emerald-600');
+                tabSignup.classList.add('text-gray-500');
+            } else {
+                loginForm.classList.add('hidden');
+                signupForm.classList.remove('hidden');
+                tabSignup.classList.add('bg-white', 'shadow', 'text-emerald-600');
+                tabSignup.classList.remove('text-gray-500');
+                tabLogin.classList.remove('bg-white', 'shadow', 'text-emerald-600');
+                tabLogin.classList.add('text-gray-500');
+            }
+        }
+
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value.trim();
+            const username = document.getElementById('signupUsername').value.trim().toLowerCase();
+            const password = document.getElementById('signupPassword').value;
+            const msg = document.getElementById('authMessage');
+            const useBackend = await backendAvailable();
+            if (useBackend) {
+                try {
+                    const res = await fetch(API_URL + '/api/users', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, username, password })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        msg.innerText = 'Akun dibuat di server! Silakan masuk.';
+                        msg.className = 'text-center text-sm mt-4 font-medium text-emerald-600';
+                        document.getElementById('signupForm').reset();
+                        setTimeout(() => switchAuthTab('login'), 1200);
+                    } else {
+                        msg.innerText = data.error || 'Gagal membuat akun di server.';
+                        msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                    }
+                } catch (err) {
+                    msg.innerText = 'Gagal terhubung ke server, menyimpan lokal.';
+                    msg.className = 'text-center text-sm mt-4 font-medium text-amber-600';
+                    // fallback to local
+                    if (users.find(u => u.username === username)) {
+                        msg.innerText = 'Username sudah digunakan! Pilih yang lain.';
+                        msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                        return;
+                    }
+                    const role = username.endsWith('dlr01') ? 'developer' : 'customer';
+                    users.push({ name, username, password, role });
+                    localStorage.setItem('tk_users', JSON.stringify(users));
+                    document.getElementById('signupForm').reset();
+                    setTimeout(() => switchAuthTab('login'), 1200);
+                }
+            } else {
+                if (users.find(u => u.username === username)) {
+                    msg.innerText = 'Username sudah digunakan! Pilih yang lain.';
+                    msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                    return;
+                }
+                const role = username.endsWith('dlr01') ? 'developer' : 'customer';
+                users.push({ name, username, password, role });
+                localStorage.setItem('tk_users', JSON.stringify(users));
+                msg.innerText = 'Akun berhasil dibuat! Silakan masuk.';
+                msg.className = 'text-center text-sm mt-4 font-medium text-emerald-600';
+                document.getElementById('signupForm').reset();
+                setTimeout(() => switchAuthTab('login'), 1500);
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+            const password = document.getElementById('loginPassword').value;
+            const msg = document.getElementById('authMessage');
+            (async () => {
+                const useBackend = await backendAvailable();
+                if (useBackend) {
+                    try {
+                        const res = await fetch(API_URL + '/api/login', {
+                            method: 'POST', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, password })
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.ok) {
+                            currentUser = data.username;
+                            sessionStorage.setItem('tk_current_user', currentUser);
+                            const role = data.role || 'customer';
+                            sessionStorage.setItem('tk_current_role', role);
+                            document.getElementById('loginForm').reset();
+                            msg.innerText = '';
+                            // fetch server-side transactions into local cache
+                            const exp = await fetch(API_URL + '/api/export?username=' + encodeURIComponent(currentUser));
+                            if (exp.ok) {
+                                const json = await exp.json();
+                                // merge
+                                json.transactions.forEach(t => {
+                                    if (!allTransactions.find(x => x.id === t.id)) allTransactions.push(t);
+                                });
+                                localStorage.setItem('tk_transactions', JSON.stringify(allTransactions));
+                            }
+                            initApp();
+                            // reveal admin controls if developer
+                            if (sessionStorage.getItem('tk_current_role') === 'developer') showAdminControls();
+                        } else {
+                            msg.innerText = data.error || 'Username atau password salah!';
+                            msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                        }
+                    } catch (err) {
+                        msg.innerText = 'Gagal terhubung ke server, mencoba login lokal.';
+                        msg.className = 'text-center text-sm mt-4 font-medium text-amber-600';
+                        const user = users.find(u => u.username === username && u.password === password);
+                        if (user) {
+                            currentUser = user.username;
+                            sessionStorage.setItem('tk_current_user', currentUser);
+                            const role = user.role || (currentUser.endsWith('dlr01') ? 'developer' : 'customer');
+                            sessionStorage.setItem('tk_current_role', role);
+                            document.getElementById('loginForm').reset();
+                            msg.innerText = '';
+                            initApp();
+                            if (role === 'developer') showAdminControls();
+                        } else {
+                            msg.innerText = 'Username atau password salah!';
+                            msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                        }
+                    }
+                } else {
+                    const user = users.find(u => u.username === username && u.password === password);
+                    if (user) {
+                        currentUser = user.username;
+                        sessionStorage.setItem('tk_current_user', currentUser);
+                        document.getElementById('loginForm').reset();
+                        msg.innerText = '';
+                        initApp();
+                    } else {
+                        msg.innerText = 'Username atau password salah!';
+                        msg.className = 'text-center text-sm mt-4 font-medium text-red-500';
+                    }
+                }
+            })();
+        });
+
+        function logout() {
+            if(confirm('Yakin ingin keluar?')) {
+                currentUser = null;
+                sessionStorage.removeItem('tk_current_user');
+                sessionStorage.removeItem('tk_current_role');
+                document.getElementById('appView').classList.add('hidden');
+                document.getElementById('authView').classList.remove('hidden');
+                hideAdminControls();
+            }
+        }
+
+        // --- APP LOGIC ---
+        function initApp() {
+            document.getElementById('authView').classList.add('hidden');
+            document.getElementById('appView').classList.remove('hidden');
+
+            const userObj = users.find(u => u.username === currentUser);
+            document.getElementById('userGreeting').innerText = `Halo, ${userObj ? userObj.name : currentUser}`;
+
+            // Determine and persist role: prefer session, else local user, default 'customer'
+            let role = sessionStorage.getItem('tk_current_role');
+            if (!role) {
+                role = (userObj && userObj.role) ? userObj.role : 'customer';
+                sessionStorage.setItem('tk_current_role', role);
+            }
+            if (role === 'developer') showAdminControls(); else hideAdminControls();
+
+            // Set default datetime
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('datetime').value = now.toISOString().slice(0, 16);
+
+            updateUI();
+        }
+
+        function getUserTransactions() {
+            // FILTER: Hanya ambil transaksi milik user yang sedang login
+            return allTransactions.filter(t => t.username === currentUser);
+        }
+
+        function saveTransaction(newTransaction) {
+            allTransactions.push(newTransaction);
+            localStorage.setItem('tk_transactions', JSON.stringify(allTransactions));
+            updateUI();
+        }
+
+        function deleteTransaction(id) {
+            if(confirm('Yakin ingin menghapus data ini?')) {
+                allTransactions = allTransactions.filter(t => t.id !== id);
+                localStorage.setItem('tk_transactions', JSON.stringify(allTransactions));
+                updateUI();
+            }
+        }
+        // Expose to window for HTML onclick
+        window.deleteTransaction = deleteTransaction;
+
+        function updateUI() {
+            const userTrans = getUserTransactions();
+            
+            // 1. Update Total (Otomatis 0 jika array kosong)
+            const total = userTrans.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+            document.getElementById('totalSavings').innerText = formatRupiah(total);
+
+            // 2. Update Riwayat
+            const listContainer = document.getElementById('transactionList');
+            document.getElementById('transactionCount').innerText = `${userTrans.length} data`;
+            listContainer.innerHTML = '';
+            
+            const sortedTransactions = [...userTrans].sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
+            if (sortedTransactions.length === 0) {
+                listContainer.innerHTML = '<p class="text-center text-gray-400 py-4 text-sm">Belum ada transaksi. Mulai menabung sekarang!</p>';
+            } else {
+                sortedTransactions.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 fade-in';
+                    item.innerHTML = `
+                        <div class="flex-1">
+                            <p class="font-bold text-gray-800 text-lg">${formatRupiah(t.amount)}</p>
+                            <p class="text-xs text-gray-500 truncate">${t.note || 'Tidak ada catatan'}</p>
+                            <p class="text-xs text-emerald-600 font-medium mt-1"><i class="far fa-clock mr-1"></i>${formatDateTime(t.datetime)}</p>
+                        </div>
+                        <button onclick="deleteTransaction('${t.id}')" class="text-red-400 hover:text-red-600 p-3 hover:bg-red-50 rounded-full transition">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    `;
+                    listContainer.appendChild(item);
+                });
+            }
+
+            renderCalendar(userTrans);
+        }
+
+        // --- CALENDAR LOGIC ---
+        function renderCalendar(userTrans) {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+            
+            document.getElementById('calendarMonthYear').innerText = new Date(year, month).toLocaleString('id-ID', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div></div>`;
+            }
+
+            const today = new Date();
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                // Cek apakah ADA TRANSAKSI USER INI di tanggal tersebut
+                const hasTrans = userTrans.some(t => t.datetime.startsWith(dateStr));
+                const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+
+                let classes = 'calendar-day hover:bg-gray-100 cursor-pointer transition';
+                if (hasTrans) classes += ' has-transaction shadow-sm';
+                if (isToday) classes += ' today';
+
+                grid.innerHTML += `<div class="${classes}" title="${hasTrans ? 'Ada tabungan' : ''}">${day}</div>`;
+            }
+        }
+
+        // --- UTILITIES ---
+        const formatRupiah = (number) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+        };
+
+        const formatDateTime = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        };
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('savingsForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = parseFloat(document.getElementById('amount').value);
+            const note = document.getElementById('note').value;
+            const datetime = document.getElementById('datetime').value;
+
+            if (!amount || !datetime) return;
+
+            const newTransaction = {
+                id: Date.now().toString(),
+                username: currentUser, // PENTING: Menandai milik siapa data ini
+                amount: amount,
+                note: note,
+                datetime: datetime
+            };
+
+            saveTransaction(newTransaction);
+            
+            document.getElementById('amount').value = '';
+            document.getElementById('note').value = '';
+            
+            // Notifikasi sederhana
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check mr-2"></i>Tersimpan!';
+            btn.classList.replace('bg-emerald-600', 'bg-blue-600');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.replace('bg-blue-600', 'bg-emerald-600');
+            }, 1500);
+        });
+
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            updateUI();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            updateUI();
+        });
+
+        // --- INITIALIZATION ---
+        // --- BACKEND / EXPORT / IMPORT / SYNC SUPPORT ---
+        const API_URL = 'http://localhost:3000';
+
+        async function backendAvailable() {
+            try {
+                const r = await fetch(API_URL + '/api/ping', { method: 'GET' });
+                return r.ok;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Export local transactions to a JSON file
+        function exportData() {
+            if (!currentUser) return alert('Silakan login terlebih dahulu.');
+            const data = getUserTransactions();
+            const blob = new Blob([JSON.stringify({ username: currentUser, transactions: data }, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tabungan_${currentUser}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        // Import transactions from file and merge to localStorage
+        function handleImportFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const parsed = JSON.parse(reader.result);
+                    const imported = parsed.transactions || parsed;
+                    if (!Array.isArray(imported)) return alert('Format file tidak dikenali.');
+                    imported.forEach(t => {
+                        // ensure username
+                        t.username = t.username || currentUser;
+                        // avoid duplicates
+                        if (!allTransactions.find(x => x.id === t.id)) {
+                            allTransactions.push(t);
+                        }
+                    });
+                    localStorage.setItem('tk_transactions', JSON.stringify(allTransactions));
+                    updateUI();
+                    alert('Import selesai.');
+                } catch (err) {
+                    alert('Gagal membaca file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        }
+
+        async function syncData() {
+            if (!currentUser) return alert('Silakan login terlebih dahulu.');
+            const ok = await backendAvailable();
+            if (!ok) return alert('Backend tidak tersedia pada ' + API_URL + '. Pastikan server dijalankan.');
+
+            const payload = { username: currentUser, transactions: getUserTransactions() };
+            try {
+                const res = await fetch(API_URL + '/api/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok && data.transactions) {
+                    // replace local transactions for this user with server result (merge)
+                    // keep other users' transactions intact
+                    const others = allTransactions.filter(t => t.username !== currentUser);
+                    allTransactions = others.concat(data.transactions);
+                    localStorage.setItem('tk_transactions', JSON.stringify(allTransactions));
+                    updateUI();
+                    alert('Sinkronisasi berhasil.');
+                } else {
+                    alert('Sinkronisasi gagal: ' + (data.error || 'unknown'));
+                }
+            } catch (err) {
+                alert('Sinkronisasi gagal: ' + err.message);
+            }
+        }
+
+        // Wire up buttons
+        document.getElementById('exportBtn').addEventListener('click', exportData);
+        document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+        document.getElementById('importFile').addEventListener('change', handleImportFile);
+        document.getElementById('syncBtn').addEventListener('click', syncData);
+
+        // --- Server view and auto-sync ---
+        let autoSyncEnabled = false;
+        let autoSyncId = null;
+
+        async function fetchServerData() {
+            if (!currentUser) return alert('Silakan login terlebih dahulu.');
+            const ok = await backendAvailable();
+            if (!ok) return alert('Server tidak tersedia pada ' + API_URL);
+            try {
+                const res = await fetch(API_URL + '/api/export?username=' + encodeURIComponent(currentUser));
+                const data = await res.json();
+                if (res.ok) {
+                    // show in a simple modal-like alert (lightweight)
+                    const txt = JSON.stringify(data.transactions || [], null, 2);
+                    const w = window.open('', '_blank', 'width=600,height=600,scrollbars=yes');
+                    w.document.write('<pre>' + txt.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>');
+                } else {
+                    alert('Gagal mengambil data server: ' + (data.error || 'unknown'));
+                }
+            } catch (err) { alert('Gagal mengambil data server: ' + err.message); }
+        }
+
+        function toggleAutoSync() {
+            autoSyncEnabled = !autoSyncEnabled;
+            const btn = document.getElementById('autoSyncBtn');
+            btn.innerText = autoSyncEnabled ? 'AutoSync: ON' : 'AutoSync: OFF';
+            btn.className = autoSyncEnabled ? 'text-xs bg-emerald-600 text-white px-2 py-1 rounded-md hover:bg-emerald-700' : 'text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200';
+            if (autoSyncEnabled) {
+                autoSyncId = setInterval(() => { if (currentUser) syncData(); }, 1000 * 60 * 2); // every 2 minutes
+            } else {
+                clearInterval(autoSyncId);
+                autoSyncId = null;
+            }
+        }
+
+        // Add server view, autosync and admin buttons to header dynamically
+        (function addHeaderControls(){
+            const header = document.querySelector('header .flex.justify-between');
+            if (!header) return;
+            const div = document.createElement('div');
+            div.className = 'flex items-center gap-2';
+            div.innerHTML = `
+                <button id="viewServerBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200">Lihat Server</button>
+                <button id="autoSyncBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200">AutoSync: OFF</button>
+                <button id="adminUsersBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200 hidden">Semua Pengguna</button>
+                <button id="adminTransBtn" class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-md hover:bg-gray-200 hidden">Semua Transaksi</button>
+            `;
+            header.appendChild(div);
+            document.getElementById('viewServerBtn').addEventListener('click', fetchServerData);
+            document.getElementById('autoSyncBtn').addEventListener('click', toggleAutoSync);
+            document.getElementById('adminUsersBtn').addEventListener('click', fetchAllUsers);
+            document.getElementById('adminTransBtn').addEventListener('click', fetchAllTransactions);
+        })();
+
+        function showAdminControls() {
+            const ubtn = document.getElementById('adminUsersBtn');
+            const tbtn = document.getElementById('adminTransBtn');
+            if (ubtn) ubtn.classList.remove('hidden');
+            if (tbtn) tbtn.classList.remove('hidden');
+        }
+
+        function hideAdminControls() {
+            const ubtn = document.getElementById('adminUsersBtn');
+            const tbtn = document.getElementById('adminTransBtn');
+            if (ubtn) ubtn.classList.add('hidden');
+            if (tbtn) tbtn.classList.add('hidden');
+        }
+
+        async function fetchAllUsers() {
+            if (!currentUser) return alert('Silakan login terlebih dahulu.');
+            try {
+                const res = await fetch(API_URL + '/api/admin/users', { headers: { 'x-username': currentUser } });
+                const data = await res.json();
+                if (res.ok) {
+                    const txt = JSON.stringify(data.users || [], null, 2);
+                    const w = window.open('', '_blank', 'width=700,height=700,scrollbars=yes');
+                    w.document.write('<pre>' + txt.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>');
+                } else {
+                    alert('Gagal ambil pengguna: ' + (data.error || 'unknown'));
+                }
+            } catch (err) { alert('Gagal ambil pengguna: ' + err.message); }
+        }
+
+        async function fetchAllTransactions() {
+            if (!currentUser) return alert('Silakan login terlebih dahulu.');
+            try {
+                const res = await fetch(API_URL + '/api/admin/transactions', { headers: { 'x-username': currentUser } });
+                const data = await res.json();
+                if (res.ok) {
+                    const txt = JSON.stringify(data.transactions || [], null, 2);
+                    const w = window.open('', '_blank', 'width=800,height=700,scrollbars=yes');
+                    w.document.write('<pre>' + txt.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</pre>');
+                } else {
+                    alert('Gagal ambil transaksi: ' + (data.error || 'unknown'));
+                }
+            } catch (err) { alert('Gagal ambil transaksi: ' + err.message); }
+        }
+
+        // Cek apakah user sudah login sebelumnya di sesi ini
+        if (currentUser) {
+            initApp();
+        } else {
+            document.getElementById('authView').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
